@@ -81,7 +81,18 @@ BRANCH=$(git status | sed -n 's/.*On branch //p')
 
 # Source package name should match the specfile - we'll use that in lieu of parsing "Name:" out of it
 # There could def. be a better way to do this....
-PKG=$(find . -iname \*.spec | head -1 | xargs -n 1 basename | sed 's/\.spec//')
+# UPDATE: The better way is to use rpmspec, but this may not be installed, so
+# fall back to the old way if it isn't.
+specfile=(SPECS/*.spec)
+if (( ${#specfile[@]}!= 1 )); then
+    echo "ERROR: Exactly one spec file expected, ${#specfile[@]} found."
+    exit 1
+fi
+
+PKG=$(rpmspec -q --qf '%{NAME}\n' --srpm "${specfile[0]}") || {
+    PKG=${specfile[0]##*/}
+    PKG=${PKG%.spec}
+}
 
 if [[ $(echo "$PKG" | wc -c) -lt 2 ]]; then
   echo "ERROR: Having trouble finding the name of the package based on the name of the .spec file."
