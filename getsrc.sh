@@ -84,52 +84,46 @@ fi
 
 
 # Loop through each line of our looksaide, and download the file:
+# Regexes to determine which type of line it is and match the fields.
+new_re='^([a-z]+[0-9]+) \(([^\)]+)\) = ([0-9a-f]+)$'
+old_re='^([0-9a-f]+) ([^ ]+)$'
+# Regex used for skipping lines with only whitespace.
+skip_re='^[[:space:]]*$'
+shasizes=(
+    [33]=md5
+    [41]=sha1
+    [65]=sha256
+    [97]=sha384
+    [129]=sha512
+)
 for line in "${sourcelines[@]}"; do
+    macros[SHATYPE]=""
+    shopt -s nocasematch
+    if [[ $line =~ $new_re ]]; then
+	# This is a new-style line: "SHATYPE (NAME) = HASH"
+	macros[SHATYPE]=${BASH_REMATCH[1],,}
+	macros[FILENAME]=${BASH_REMATCH[2]}
+	macros[HASH]=${BASH_REMATCH[3]}
+    elif [[ $line =~ $old_re ]]; then
+	# This is an old-style line: "HASH NAME"
+	macros[HASH]=${BASH_REMATCH[1]}
+	macros[FILENAME]=${BASH_REMATCH[2]}
+    elif [[ $line =~ $skip_re ]]; then
+	# This line just has whitespace, skip it.
+	continue
+    else
+	echo "ERROR: This lookaside line does not appear to have 2 or 4 space-separated fields.  I don't know how to parse this line:"
+	printf '%s\n' "$line"
+	exit 1
+    fi
+    shopt -u nocasematch
   
-  # First, we need to discover whether this is a new or old style hash.  New style has 4 fields "SHATYPE (NAME) = HASH", old style has 2: "HASH NAME"
-  if [[ $(echo "$line" | awk '{print NF}') -eq 4 ]]; then
-    macros[HASH]=$(echo "$line" | awk '{print $4}')
-    macros[FILENAME]=$(echo "$line" | awk '{print $2}' | tr -d ')' | tr -d '(')
-  
-  # Old style hash: "HASH FILENAME"
-  elif [[ $(echo "$line" | awk '{print NF}') -eq 2 ]]; then
-    macros[HASH]=$(echo "$line" | awk '{print $1}')
-    macros[FILENAME]=$(echo "$line" | awk '{print $2}')
-  
-  # Skip a line if it's blank or just an empty one
-  elif [[ $(echo "$line" | wc -c) -lt 3 ]]; then
-    continue
+    # We have a hash and a filename, now we need to find the hash type (based on string length):
+    # UPDATE: We don't need to do this if we already have it from the line.
+    if [[ ! ${macros[SHATYPE]} ]]; then
+	macros[SHATYPE]=${shasizes[${#macros[HASH]}]}
+    fi
 
-  else
-    echo "ERROR: This lookaside line does not appear to have 2 or 4 space-separated fields.  I don't know how to parse this line:"
-    echo "${line}"
-    exit 1
-  fi
-    
-  
-  macros[SHATYPE]=""
-  # We have a hash and a filename, now we need to find the hash type (based on string length):
-  case ${#macros[HASH]} in 
-    "33")
-      macros[SHATYPE]="md5"
-      ;;
-    "41")
-      macros[SHATYPE]="sha1"
-      ;;
-    "65")
-      macros[SHATYPE]="sha256"
-      ;;
-    "97")
-      macros[SHATYPE]="sha384"
-      ;;
-    "129")
-      macros[SHATYPE]="sha512"
-      ;;
-  esac
-    
-
-  # Finally, we have all our information call the download function with the relevant variables:
-  download
-
-
+    # Finally, we have all our information call the download function with the relevant variables:
+    download
 done
