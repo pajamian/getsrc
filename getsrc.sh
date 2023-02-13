@@ -74,7 +74,7 @@ fi
 
 
 # Current git branch.  We don't error out if this fails, as we may not necessarily need this info
-BRANCH=$(git branch --show-current 2> /dev/null)
+BRANCH=$(git status | sed 's/.*On branch //p')
 
 
 
