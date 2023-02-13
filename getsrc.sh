@@ -17,7 +17,7 @@ https://sources.stream.centos.org/sources/rpms/%PKG%/%FILENAME%/%SHATYPE%/%HASH%
 https://src.fedoraproject.org/repo/pkgs/%PKG%/%FILENAME%/%SHATYPE%/%HASH%/%FILENAME%
 )
 
-
+declare -A macros
 
 ###
 # Function that actually downloads a lookaside source
@@ -26,16 +26,12 @@ function download {
   
   foundFile=0
 
-  for site in "${lookasides[@]}"; do
-    url="$site"
-
-    # Substitute each of our macros (%PKG%, %HASH%, etc.):
-    url=$(echo "${url}" | sed "s|%HASH%|${1}|g")
-    url=$(echo "${url}" | sed "s|%FILENAME%|${2}|g")
-    url=$(echo "${url}" | sed "s|%BRANCH%|${3}|g")
-    url=$(echo "${url}" | sed "s|%PKG%|${4}|g")
-    url=$(echo "${url}" | sed "s|%SHATYPE%|${5}|g")
-    
+  for url in "${lookasides[@]}"; do
+      # Substitute each of our macros (%PKG%, %HASH%, etc.):
+      for k in "${!macros[@]}"; do
+	  v=${macros[$k]}
+	  url=${url//"%$k%"/$v}
+      done
 
     # Use curl to get just the header info of the remote file
     retCode=$(curl -o /dev/null --silent -Iw '%{http_code}' "${url}")
@@ -43,8 +39,8 @@ function download {
     # Download the file only if we get a 3-character http return code (200, 301, 302, 404, etc.) 
     # AND the code must begin with 2 or 3, to indicate 200 FOUND, or some kind of 3XX redirect
     if [[ $(echo "${retCode}" | wc -c) -eq 4  && ( $(echo "${retCode}" | cut -c1-1) == "2" || $(echo "${retCode}" | cut -c1-1) == "3" ) ]]; then
-       curl --silent --create-dirs -o "${2}" "${url}"
-       echo "Downloaded: ${url}  ----->  ${2}"
+       curl --silent --create-dirs -o "${macros[FILENAME]}" "${url}"
+       echo "Downloaded: ${url}  ----->  ${macros[FILENAME]}"
        foundFile=1
        break
     fi
@@ -52,7 +48,7 @@ function download {
 
   if [[ "${foundFile}" == "0" ]]; then
     echo "ERROR: Unable to find lookaside file with the following HASH / FILENAME / BRANCH / PKG / SHATYPE :"
-    echo "$1  /  $2  /  $3  /  $4  /  $5"
+    echo "${macros[HASH]}  /  $macros[FILENAME]  /  $macros[BRANCH]  /  $macros[PKG]  /  $macros[SHATYPE]"
     exit 1
   fi
 
@@ -73,7 +69,7 @@ fi
 
 
 # Current git branch.  We don't error out if this fails, as we may not necessarily need this info
-BRANCH=$(git status | sed -n 's/.*On branch //p')
+macros[BRANCH]=$(git status | sed -n 's/.*On branch //p')
 
 
 
@@ -87,12 +83,12 @@ if (( ${#specfile[@]}!= 1 )); then
     exit 1
 fi
 
-PKG=$(rpmspec -q --qf '%{NAME}\n' --srpm "${specfile[0]}") || {
-    PKG=${specfile[0]##*/}
-    PKG=${PKG%.spec}
+macros[PKG]=$(rpmspec -q --qf '%{NAME}\n' --srpm "${specfile[0]}") || {
+    pkg=${specfile[0]##*/}
+    macros[PKG]=${pkg%.spec}
 }
 
-if (( ${#PKG} < 2 )); then
+if (( ${#macros[PKG]} < 2 )); then
   echo "ERROR: Having trouble finding the name of the package based on the name of the .spec file."
   exit 1
 fi
@@ -104,13 +100,13 @@ for line in "${sourcelines[@]}"; do
   
   # First, we need to discover whether this is a new or old style hash.  New style has 4 fields "SHATYPE (NAME) = HASH", old style has 2: "HASH NAME"
   if [[ $(echo "$line" | awk '{print NF}') -eq 4 ]]; then
-    HASH=$(echo "$line" | awk '{print $4}')
-    FILENAME=$(echo "$line" | awk '{print $2}' | tr -d ')' | tr -d '(')
+    macros[HASH]=$(echo "$line" | awk '{print $4}')
+    macros[FILENAME]=$(echo "$line" | awk '{print $2}' | tr -d ')' | tr -d '(')
   
   # Old style hash: "HASH FILENAME"
   elif [[ $(echo "$line" | awk '{print NF}') -eq 2 ]]; then
-    HASH=$(echo "$line" | awk '{print $1}')
-    FILENAME=$(echo "$line" | awk '{print $2}')
+    macros[HASH]=$(echo "$line" | awk '{print $1}')
+    macros[FILENAME]=$(echo "$line" | awk '{print $2}')
   
   # Skip a line if it's blank or just an empty one
   elif [[ $(echo "$line" | wc -c) -lt 3 ]]; then
@@ -123,29 +119,29 @@ for line in "${sourcelines[@]}"; do
   fi
     
   
-  SHATYPE=""
+  macros[SHATYPE]=""
   # We have a hash and a filename, now we need to find the hash type (based on string length):
-  case $(echo "$HASH" | wc -c) in 
+  case ${#macros[HASH]} in 
     "33")
-      SHATYPE="md5"
+      macros[SHATYPE]="md5"
       ;;
     "41")
-      SHATYPE="sha1"
+      macros[SHATYPE]="sha1"
       ;;
     "65")
-      SHATYPE="sha256"
+      macros[SHATYPE]="sha256"
       ;;
     "97")
-      SHATYPE="sha384"
+      macros[SHATYPE]="sha384"
       ;;
     "129")
-      SHATYPE="sha512"
+      macros[SHATYPE]="sha512"
       ;;
   esac
     
 
   # Finally, we have all our information call the download function with the relevant variables:
-  download "${HASH}"  "${FILENAME}"  "${BRANCH}"  "${PKG}"  "${SHATYPE}"
+  download
 
 
 done
