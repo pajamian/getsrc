@@ -23,35 +23,23 @@ declare -A macros
 # Function that actually downloads a lookaside source
 # Takes HASH / FILENAME / BRANCH / PKG / SHATYPE as arguments $1 / $2 / $3 / $4 / $5
 function download {
-  
-  foundFile=0
+    for url in "${lookasides[@]}"; do
+	# Substitute each of our macros (%PKG%, %HASH%, etc.):
+	for k in "${!macros[@]}"; do
+	    v=${macros[$k]}
+	    url=${url//"%$k%"/$v}
+	done
 
-  for url in "${lookasides[@]}"; do
-      # Substitute each of our macros (%PKG%, %HASH%, etc.):
-      for k in "${!macros[@]}"; do
-	  v=${macros[$k]}
-	  url=${url//"%$k%"/$v}
-      done
+	# Download the file with curl, return if successful.
+	if curl --create-dirs -sfLo "${macros[FILENAME]}" "$url"; then
+	    printf 'Downloaded: %s  ----->  %s\n' "$url" "${macros[FILENAME]}"
+	    return
+	fi
+    done
 
-    # Use curl to get just the header info of the remote file
-    retCode=$(curl -o /dev/null --silent -Iw '%{http_code}' "${url}")
-    
-    # Download the file only if we get a 3-character http return code (200, 301, 302, 404, etc.) 
-    # AND the code must begin with 2 or 3, to indicate 200 FOUND, or some kind of 3XX redirect
-    if [[ $(echo "${retCode}" | wc -c) -eq 4  && ( $(echo "${retCode}" | cut -c1-1) == "2" || $(echo "${retCode}" | cut -c1-1) == "3" ) ]]; then
-       curl --silent --create-dirs -o "${macros[FILENAME]}" "${url}"
-       echo "Downloaded: ${url}  ----->  ${macros[FILENAME]}"
-       foundFile=1
-       break
-    fi
-  done
-
-  if [[ "${foundFile}" == "0" ]]; then
     echo "ERROR: Unable to find lookaside file with the following HASH / FILENAME / BRANCH / PKG / SHATYPE :"
     echo "${macros[HASH]}  /  $macros[FILENAME]  /  $macros[BRANCH]  /  $macros[PKG]  /  $macros[SHATYPE]"
     exit 1
-  fi
-
 }
 
 
