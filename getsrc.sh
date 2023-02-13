@@ -1,6 +1,7 @@
 #!/bin/bash
-
+#
 # Skip's "universal" lookaside grabber
+# Updated by Peter Ajamian
 #
 # Run this in a Fedora/Rocky/CentOS/CentOS Stream source directory, and it will retrieve the lookaside sources (tarballs) into the current directory
 #
