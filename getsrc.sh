@@ -5,8 +5,6 @@
 # Run this in a Fedora/Rocky/CentOS/CentOS Stream source directory, and it will retrieve the lookaside sources (tarballs) into the current directory
 #
 
-IFS='
-'
 shopt -s nullglob
 
 # List of lookaside locations and their patterns
