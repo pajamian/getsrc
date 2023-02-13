@@ -11,12 +11,13 @@ IFS='
 
 # List of lookaside locations and their patterns
 # This can be easily edited to add more distro locations, or change their order for less 404 misses:
-LOOKASIDES='https://rocky-linux-sources-staging.a1.rockylinux.org/%HASH%
+lookasides=(
+https://rocky-linux-sources-staging.a1.rockylinux.org/%HASH%
 https://sources.build.resf.org/%HASH%
 https://git.centos.org/sources/%PKG%/%BRANCH%/%HASH%
 https://sources.stream.centos.org/sources/rpms/%PKG%/%FILENAME%/%SHATYPE%/%HASH%/%FILENAME%
 https://src.fedoraproject.org/repo/pkgs/%PKG%/%FILENAME%/%SHATYPE%/%HASH%/%FILENAME%
-'
+)
 
 
 
@@ -27,7 +28,7 @@ function download {
   
   foundFile=0
 
-  for site in $(echo "${LOOKASIDES}"); do
+  for site in "${lookasides[@]}"; do
     url="$site"
 
     # Substitute each of our macros (%PKG%, %HASH%, etc.):
