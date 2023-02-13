@@ -7,7 +7,7 @@
 
 IFS='
 '
-
+shopt -s nullglob
 
 # List of lookaside locations and their patterns
 # This can be easily edited to add more distro locations, or change their order for less 404 misses:
@@ -65,9 +65,10 @@ function download {
 
 ###
 # discover our list of lookaside sources.  They are either in a "sources" file (new), or the older ".packagename.metadata" format (old)
-SOURCES=$(cat .*.metadata sources 2> /dev/null) 
+sourcesfiles=(.*.metadata sources)
+mapfile -t sourcelines < <(cat "${sourcesfiles[@]}" 2>/dev/null)
 
-if [[ $(echo "$SOURCES" | wc -c) -lt 10 ]]; then
+if (( ${#sourcelines[@]} == 0 )); then
   echo "ERROR: Cannot find .*.metadata or sources file listing sources.  Are you in the right directory?"
   exit 1
 fi
@@ -80,7 +81,7 @@ BRANCH=$(git status | sed -n 's/.*On branch //p')
 
 # Source package name should match the specfile - we'll use that in lieu of parsing "Name:" out of it
 # There could def. be a better way to do this....
-PKG=$(find . -iname *.spec | head -1 | xargs -n 1 basename | sed 's/\.spec//')
+PKG=$(find . -iname \*.spec | head -1 | xargs -n 1 basename | sed 's/\.spec//')
 
 if [[ $(echo "$PKG" | wc -c) -lt 2 ]]; then
   echo "ERROR: Having trouble finding the name of the package based on the name of the .spec file."
@@ -90,7 +91,7 @@ fi
 
 
 # Loop through each line of our looksaide, and download the file:
-for line in $(echo "$SOURCES"); do
+for line in "${sourcelines[@]}"; do
   
   # First, we need to discover whether this is a new or old style hash.  New style has 4 fields "SHATYPE (NAME) = HASH", old style has 2: "HASH NAME"
   if [[ $(echo "$line" | awk '{print NF}') -eq 4 ]]; then
