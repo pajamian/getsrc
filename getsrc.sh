@@ -38,7 +38,7 @@ function download {
     done
 
     echo "ERROR: Unable to find lookaside file with the following HASH / FILENAME / BRANCH / PKG / SHATYPE :"
-    echo "${macros[HASH]}  /  $macros[FILENAME]  /  $macros[BRANCH]  /  $macros[PKG]  /  $macros[SHATYPE]"
+    echo "${macros[HASH]}  /  ${macros[FILENAME]}  /  ${macros[BRANCH]}  /  ${macros[PKG]}  /  ${macros[SHATYPE]}"
     exit 1
 }
 
