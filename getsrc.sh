@@ -94,7 +94,7 @@ PKG=$(rpmspec -q --qf '%{NAME}\n' --srpm "${specfile[0]}") || {
     PKG=${PKG%.spec}
 }
 
-if [[ $(echo "$PKG" | wc -c) -lt 2 ]]; then
+if (( ${#PKG} < 2 )); then
   echo "ERROR: Having trouble finding the name of the package based on the name of the .spec file."
   exit 1
 fi
