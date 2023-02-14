@@ -72,7 +72,7 @@ if (( ${#specfile[@]}!= 1 )); then
     exit 1
 fi
 
-macros[PKG]=$(rpmspec -q --qf '%{NAME}\n' --srpm "${specfile[0]}") || {
+macros[PKG]=$(rpmspec -q --qf '%{NAME}\n' --srpm "${specfile[0]}" 2>/dev/null) || {
     pkg=${specfile[0]##*/}
     macros[PKG]=${pkg%.spec}
 }
