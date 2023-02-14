@@ -6,7 +6,7 @@
 # Run this in a Fedora/Rocky/CentOS/CentOS Stream source directory, and it will retrieve the lookaside sources (tarballs) into the current directory
 #
 
-shopt -s nullglob
+shopt -s nullglob extglob
 
 # List of lookaside locations and their patterns
 # This can be easily edited to add more distro locations, or change their order for less 404 misses:
@@ -18,13 +18,57 @@ https://sources.stream.centos.org/sources/rpms/%PKG%/%FILENAME%/%SHATYPE%/%HASH%
 https://src.fedoraproject.org/repo/pkgs/%PKG%/%FILENAME%/%SHATYPE%/%HASH%/%FILENAME%
 )
 
+# These are glob patterns.  They should be in the same order as the lookasides
+# above and need to be quoted to avoid early glob expansion.
+remotes=(
+    'http?(s)://git.rockylinux.org/*'
+    'http?(s)://git.rockylinux.org/*'
+    'http?(s)://git.centos.org/*'
+    'http?(s)://gitlab.com/redhat/centos-stream/*'
+    'http?(s)://src.fedoraproject.org/*'
+)
+
+# These are branch names that will be glob-matched to to the lookasides above.
+# Missing entries or empty strings will default to matching any branch.
+branches=(
+    r8
+    r9
+    ''
+    ''
+    ''
+)
+
 declare -A macros
 
 ###
 # Function that actually downloads a lookaside source
 # Takes HASH / FILENAME / BRANCH / PKG / SHATYPE as arguments $1 / $2 / $3 / $4 / $5
 function download {
+    # We need to re-order the lookasides according to the remote and branch
+    # macro entries.
+    local -a urls
+    local -A tried
+
+    # Start by looking for matching entries
+    if [[ $macros[REMOTE] ]]; then
+	for ((i=0; i<${#lookasides[@]}; i++)); do
+	    [[ ${macros[REMOTE]} == ${remotes[i]} ]] || continue
+	    [[ ! ${branches[i]} || ${macros[BRANCH]} == ${branches[i]} ]] ||
+	    	continue
+
+	    urls+=("${lookasides[i]}")
+	    tried[${lookasides[i]}]=1
+	done
+    fi
+
+    # Then pile the rest of the URLs onto the end.
     for url in "${lookasides[@]}"; do
+	[[ ${tried[$url]} ]] && continue
+	urls+=("$url")
+	tried[$url]=1
+    done
+
+    for url in "${urls[@]}"; do
 	# Substitute each of our macros (%PKG%, %HASH%, etc.):
 	for k in "${!macros[@]}"; do
 	    v=${macros[$k]}
@@ -32,6 +76,7 @@ function download {
 	done
 
 	# Download the file with curl, return if successful.
+	printf 'Trying: %s\n' "$url"
 	if curl --create-dirs -sfLRo "${macros[FILENAME]}" "$url"; then
 	    printf 'Downloaded: %s  ----->  %s\n' "$url" "${macros[FILENAME]}"
 	    return
@@ -82,7 +127,24 @@ if (( ${#macros[PKG]} < 2 )); then
   exit 1
 fi
 
+# Get the remote origin from git if we can.  This is not required but it will
+# help us to determine which lookaside URL to try first.
+# We look for a fetch remote tagged with origin, otherwise we get the first
+# fetch remote that is returned.
+macros[REMOTE]=""
+while read -r name url direction; do
+    # Make sure the direction is fetch.
+    [[ $direction == '(fetch)' ]] || continue
 
+    # If the name is "origin" we need to use this url.
+    if [[ $name == 'origin' ]]; then
+	macros[REMOTE]=$url
+	break
+    fi
+
+    # Otherwise we set the first url we encounter here.
+    [[ ${macros[REMOTE]} ]] || macros[REMOTE]=$url
+done < <(git remote -v)
 
 # Loop through each line of our looksaide, and download the file:
 # Regexes to determine which type of line it is and match the fields.
