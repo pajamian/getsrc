@@ -32,7 +32,7 @@ function download {
 	done
 
 	# Download the file with curl, return if successful.
-	if curl --create-dirs -sfLo "${macros[FILENAME]}" "$url"; then
+	if curl --create-dirs -sfLRo "${macros[FILENAME]}" "$url"; then
 	    printf 'Downloaded: %s  ----->  %s\n' "$url" "${macros[FILENAME]}"
 	    return
 	fi
