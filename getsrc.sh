@@ -66,7 +66,7 @@ macros[BRANCH]=$(git status | sed -n 's/.*On branch //p')
 # There could def. be a better way to do this....
 # UPDATE: The better way is to use rpmspec, but this may not be installed, so
 # fall back to the old way if it isn't.
-specfile=(SPECS/*.spec)
+specfile=(*.spec SPECS/*.spec)
 if (( ${#specfile[@]}!= 1 )); then
     echo "ERROR: Exactly one spec file expected, ${#specfile[@]} found."
     exit 1
