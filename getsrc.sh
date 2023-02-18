@@ -21,11 +21,11 @@ https://src.fedoraproject.org/repo/pkgs/%PKG%/%FILENAME%/%SHATYPE%/%HASH%/%FILEN
 # These are glob patterns.  They should be in the same order as the lookasides
 # above and need to be quoted to avoid early glob expansion.
 remotes=(
-    'http?(s)://git.rockylinux.org/*'
-    'http?(s)://git.rockylinux.org/*'
-    'http?(s)://git.centos.org/*'
-    'http?(s)://gitlab.com/redhat/centos-stream/*'
-    'http?(s)://src.fedoraproject.org/*'
+    '@(ssh://git@|http?(s)://)git.rockylinux.org*'
+    '@(ssh://git@|http?(s)://)git.rockylinux.org*'
+    '@(ssh://git@|http?(s)://)git.centos.org/*'
+    '@(ssh://git@|http?(s)://)gitlab.com[:/]redhat/centos-stream/*'
+    '@(ssh://git@|http?(s)://)src.fedoraproject.org/*'
 )
 
 # These are branch names that will be glob-matched to to the lookasides above.
