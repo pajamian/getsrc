@@ -51,6 +51,7 @@ function download {
 
     # Start by looking for matching entries
     if [[ $macros[REMOTE] ]]; then
+	shopt -s nocasematch
 	for ((i=0; i<${#lookasides[@]}; i++)); do
 	    [[ ${macros[REMOTE]} == ${remotes[i]} ]] || continue
 	    [[ ! ${branches[i]} || ${macros[BRANCH]} == ${branches[i]} ]] ||
@@ -59,6 +60,7 @@ function download {
 	    urls+=("${lookasides[i]}")
 	    tried[${lookasides[i]}]=1
 	done
+	shopt -u nocasematch
     fi
 
     # Then pile the rest of the URLs onto the end.
