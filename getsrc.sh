@@ -40,6 +40,20 @@ branches=(
 
 declare -A macros
 
+#
+# Get the hash type for a given hash.  Based on the length of the hash.
+#
+shasizes=(
+    [33]=md5
+    [41]=sha1
+    [65]=sha256
+    [97]=sha384
+    [129]=sha512
+)
+hashtype () {
+    printf '%s' "${shasizes[${#1}]}"
+}
+
 ###
 # Function that actually downloads a lookaside source
 # Takes HASH / FILENAME / BRANCH / PKG / SHATYPE as arguments $1 / $2 / $3 / $4 / $5
@@ -154,13 +168,6 @@ new_re='^([a-z]+[0-9]+) \(([^\)]+)\) = ([0-9a-f]+)$'
 old_re='^([0-9a-f]+) ([^ ]+)$'
 # Regex used for skipping lines with only whitespace.
 skip_re='^[[:space:]]*$'
-shasizes=(
-    [33]=md5
-    [41]=sha1
-    [65]=sha256
-    [97]=sha384
-    [129]=sha512
-)
 for line in "${sourcelines[@]}"; do
     macros[SHATYPE]=""
     shopt -s nocasematch
@@ -186,7 +193,7 @@ for line in "${sourcelines[@]}"; do
     # We have a hash and a filename, now we need to find the hash type (based on string length):
     # UPDATE: We don't need to do this if we already have it from the line.
     if [[ ! ${macros[SHATYPE]} ]]; then
-	macros[SHATYPE]=${shasizes[${#macros[HASH]}]}
+	macros[SHATYPE]=$(hashtype "${macros[HASH]}")
     fi
 
     # Finally, we have all our information call the download function with the relevant variables:
