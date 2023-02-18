@@ -44,11 +44,11 @@ declare -A macros
 # Get the hash type for a given hash.  Based on the length of the hash.
 #
 shasizes=(
-    [33]=md5
-    [41]=sha1
-    [65]=sha256
-    [97]=sha384
-    [129]=sha512
+    [32]=md5
+    [40]=sha1
+    [64]=sha256
+    [96]=sha384
+    [128]=sha512
 )
 hashtype () {
     printf '%s' "${shasizes[${#1}]}"
