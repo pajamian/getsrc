@@ -120,10 +120,15 @@ function download {
 
 	# Download the file with curl, return if successful.
 	printf 'Trying: %s\n' "$url"
-	if curl --create-dirs -sfLRo "${macros[FILENAME]}" "$url"; then
-	    printf 'Downloaded: %s  ----->  %s\n' "$url" "${macros[FILENAME]}"
-	    return
-	fi
+	curl --create-dirs -sfLRo "${macros[FILENAME]}" "$url" || continue
+	check_file "${macros[FILENAME]}" "${macros[HASH]}" \
+	    "${macros[SHATYPE]}" || {
+	    printf 'Invalid or corrupted file downloaded.  Trying next URL.\n'
+	    continue
+	}
+	
+	printf 'Downloaded: %s  ----->  %s\n' "$url" "${macros[FILENAME]}"
+	return
     done
 
     echo "ERROR: Unable to find lookaside file with the following HASH / FILENAME / BRANCH / PKG / SHATYPE :"
