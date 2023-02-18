@@ -54,10 +54,37 @@ hashtype () {
     printf '%s' "${shasizes[${#1}]}"
 }
 
+#
+# Validate a file against the passed hash.
+# Synopsis: check_file filename hash [hashtype]
+#
+check_file () {
+    [[ -r $1 ]] || return
+    local type
+    if (( $# >= 3 )); then
+	type=$3
+    else
+	type=$(hashtype "$2")
+    fi
+
+    # We use one of the "sum" commands, so the command name is the type followed
+    # by "sum".
+    "${type}sum" --status -c - <<<"$2  $1"
+}
+
 ###
 # Function that actually downloads a lookaside source
 # Takes HASH / FILENAME / BRANCH / PKG / SHATYPE as arguments $1 / $2 / $3 / $4 / $5
 function download {
+    # If the file already exists and matches the checksum then we don't need to
+    # download it again.
+    if check_file "${macros[FILENAME]}" "${macros[HASH]}" "${macros[SHATYPE]}"
+    then
+	printf 'File %s already exists and matches the passed hash ... %s\n' \
+	    "${macros[FILENAME]}" 'skipping.'
+	return
+    fi
+
     # We need to re-order the lookasides according to the remote and branch
     # macro entries.
     local -a urls
