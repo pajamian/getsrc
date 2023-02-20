@@ -95,8 +95,7 @@ function download {
 	shopt -s nocasematch
 	for ((i=0; i<${#lookasides[@]}; i++)); do
 	    [[ ${macros[REMOTE]} == ${remotes[i]} ]] || continue
-	    [[ ! ${branches[i]} || ${macros[BRANCH]} == ${branches[i]} ]] ||
-	    	continue
+	    [[ ${macros[BRANCH]} == ${branches[i]:=\*} ]] || continue
 
 	    urls+=("${lookasides[i]}")
 	    tried[${lookasides[i]}]=1
