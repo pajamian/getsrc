@@ -21,8 +21,8 @@ https://src.fedoraproject.org/repo/pkgs/%PKG%/%FILENAME%/%SHATYPE%/%HASH%/%FILEN
 # These are glob patterns.  They should be in the same order as the lookasides
 # above and need to be quoted to avoid early glob expansion.
 remotes=(
-    '@(ssh://git@|http?(s)://)git.rockylinux.org*'
-    '@(ssh://git@|http?(s)://)git.rockylinux.org*'
+    '@(git@|http?(s)://)git.rockylinux.org*'
+    '@(git@|http?(s)://)git.rockylinux.org*'
     '@(ssh://git@|http?(s)://)git.centos.org/*'
     '@(ssh://git@|http?(s)://)gitlab.com[:/]redhat/centos-stream/*'
     '@(ssh://git@|http?(s)://)src.fedoraproject.org/*'
